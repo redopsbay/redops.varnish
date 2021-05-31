@@ -1,0 +1,16 @@
+---
+# handlers file for redops.varnish
+- name: restart varnish
+  systemd: "name=varnish state=restarted"
+
+- name: restart nginx
+  systemd: "name=nginx state=restarted"
+
+- name: start nginx
+  systemd: "name=nginx state=started enabled=yes"
+
+- name: start varnish
+  systemd: "name=varnish state=started enabled=yes"
+
+- name: daemon reload
+  shell: "systemctl daemon-relad"

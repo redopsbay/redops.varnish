@@ -1,0 +1,93 @@
+---
+- name: Update apt packages cache
+  apt:
+    update_cache: yes
+  tags: installation
+
+- name: Install Necessary Packages
+  apt:
+    name: "{{ Ubuntu_Packages }}"
+    state: present
+  ignore_errors: '{{ ansible_check_mode }}'
+  tags: installation
+
+- name: "Template a file to /etc/systemd/system/varnish.service"
+  template:
+    src: templates/varnish.service.j2
+    dest: "/etc/systemd/system/varnish.service"
+    owner: root
+    group: root
+    mode: '0644'
+  ignore_errors: '{{ ansible_check_mode }}'
+  tags: installation
+
+- name: Override the default.vcl file
+  copy:
+    src: files/default.vcl
+    dest: /etc/varnish/default.vcl
+    owner: "root"
+    group: "root"
+    mode: '0644'
+    validate: /usr/bin/file %s
+  tags: installation
+
+- name: "Template a file to /etc/nginx/sites-available/{{ server_name }}.conf"
+  template:
+    src: templates/nginx.conf.j2
+    dest: "/etc/nginx/sites-available/{{ server_name }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  ignore_errors: '{{ ansible_check_mode }}'
+  tags: provision
+
+- name: Enable the nginx.conf configuration on apache2
+  file:
+    src: "/etc/nginx/sites-available/{{ server_name }}.conf"
+    dest: "/etc/nginx/sites-enabled/{{ server_name }}.conf"
+    owner: root
+    group: root
+    state: link
+    mode: '0777'
+  ignore_errors: '{{ ansible_check_mode }}'
+  tags: provision
+
+- name: "Template a file to /etc/varnish/{{ server_name }}.vcl"
+  template:
+    src: templates/default-template.vcl.j2
+    dest: "/etc/varnish/{{ server_name }}.vcl"
+    owner: root
+    group: root
+    mode: '0644'
+  ignore_errors: '{{ ansible_check_mode }}'
+  tags: provision
+
+- name: Append the newly added vcl file to default.vcl file
+  lineinfile:
+    path: "/etc/varnish/default.vcl"
+    insertafter: EOF
+    state: present
+    line: 'include "/etc/varnish/{{ server_name }}.vcl";'
+  tags: provision
+
+- name: Create Nginx Cache Directory
+  file:
+    path: "/var/cache/nginx/{{ server_name }}"
+    state: directory
+    owner: www-data
+    group: root
+    mode: '0700'
+  tags: provision
+
+- name: start nginx
+  systemd: "name=nginx state=started enabled=yes"
+
+- name: start varnish
+  systemd: "name=varnish state=started enabled=yes daemon_reload=yes"
+
+- name: restart varnish
+  systemd: "name=varnish state=restarted"
+
+- name: restart nginx
+  systemd: "name=nginx state=restarted"
+

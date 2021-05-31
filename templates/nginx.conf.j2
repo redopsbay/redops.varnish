@@ -1,0 +1,88 @@
+
+# Default server configuration
+#
+
+## Proxy Cache Configuration
+proxy_cache_path /var/cache/nginx levels=1:2 keys_zone={{ server_name }}:10m max_size=10g inactive=60m use_temp_path=off;
+map $sent_http_content_type $expires {
+    default                    off;
+    text/html                  epoch;
+    text/css                   max;
+    application/javascript     max;
+    application/json           max;
+    text/json                  max;
+    ~image/                    max;
+}
+
+server {
+        client_max_body_size 15000M;
+        root /var/www/html;
+        server_tokens off;
+        keepalive_timeout 800s;
+	    gzip on;
+        gzip_comp_level 5;
+        gzip_min_length 250;
+        gzip_proxied any;
+        gzip_vary on;
+        gzip_types
+            application/atom+xml
+            application/javascript
+            application/json
+            application/ld+json
+            application/manifest+json
+            application/rss+xml
+            application/vnd.geo+json
+            application/vnd.ms-fontobject
+            application/x-font-ttf
+            application/x-web-app-manifest+json
+            application/xhtml+xml
+            application/xml
+            font/opentype
+            image/bmp
+            image/jpeg
+            image/png
+            image/jpg
+            image/svg+xml
+            image/x-icon
+            text/cache-manifest
+            text/css
+            text/plain
+            text/vcard
+            text/vnd.rim.location.xloc
+            text/vtt
+            text/x-component
+            text/x-cross-domain-policy;
+
+        server_name {{ server_name }} www.{{ server_name }};;
+
+        location / {
+            proxy_buffering off;
+            proxy_redirect off;
+            proxy_cache {{ server_name }};
+            proxy_cache_revalidate on;
+            proxy_cache_min_uses 3;
+            proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+            proxy_cache_background_update on;
+            proxy_cache_lock on;
+            proxy_http_version 1.1;
+            proxy_set_header        Host $host;
+            proxy_set_header        X-Real-IP $remote_addr;
+            proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+	     
+            proxy_hide_header X-Varnish;
+            proxy_hide_header Via;
+            proxy_hide_header Server;
+	        proxy_cookie_path / "/; secure";
+            proxy_pass          http://localhost:6081;
+            proxy_redirect      http://localhost:6081 https://{{ server_name }};
+
+              expires $expires;
+
+
+        }
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Frame-Options SAMEORIGIN;
+    add_header X-Content-Type-Options nosniff;
+
+}

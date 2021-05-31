@@ -1,0 +1,23 @@
+---
+# vars file for redops.varnish
+Ubuntu_Packages:
+  - nginx-full
+  - python3-certbot-nginx
+  - certbot
+  - varnish
+
+Debian_Packages:
+  - nginx-full
+  - python3-certbot-nginx
+  - certbot
+  - varnish
+
+RHEL_Packages:
+  - nginx-full
+  - python3-certbot-nginx
+  - certbot
+  - varnish
+  - epel-release
+
+__server_name: "kflixvideo.com"
+nginx_cache: nginx_cache
